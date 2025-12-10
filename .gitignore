@@ -3,129 +3,51 @@ __pycache__/
 *.py[cod]
 *$py.class
 *.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
 *.egg
-MANIFEST
-*.manifest
-*.spec
-pip-log.txt
-pip-delete-this-directory.txt
-
-# Virtual environments
+*.egg-info/
+dist/
+build/
+.eggs/
+.env
+.env.local
+.env.*.local
+*.env
 venv/
 env/
 ENV/
-.venv
+.venv/
 
-# IDEs
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-.DS_Store
-
-# Jupyter Notebook
-.ipynb_checkpoints
+# Jupyter
+.ipynb_checkpoints/
 *.ipynb_checkpoints
 
-# Model files and checkpoints
-*.bin
-*.safetensors
-*.gguf
+# Data / Models
+*.pkl
+*.h5
 *.pt
 *.pth
 *.ckpt
-checkpoints/
-models/
-saved_models/
-outputs/
-runs/
-
-# Data (processed/raw data, NOT source code)
-data/processed/
+*.safetensors
 data/raw/
-datasets/raw/
-datasets/processed/
-*.parquet
-*.arrow
-cache/
+models/weights/
 
-# Logs
-logs/
-*.log
-wandb/
-mlruns/
-lightning_logs/
-
-# Experiment tracking
-.wandb/
-.tensorboard/
-mlflow/
-
-# Training artifacts
-results/
-experiments/results/
-plots/
-
-# Cache
-.cache/
-*.cache
-*.cached
-.hypothesis/
-
-# Environment variables
-.env
-.env.local
-
-# Temporary files
-tmp/
-temp/
-*.tmp
-
-# System files
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
 .DS_Store
 Thumbs.db
 
-# Compiled files
-*.o
-*.a
-*.lib
-*.dll
-*.dylib
-*.so.*
+# Logs
+*.log
+logs/
+mlruns/
+wandb/
+outputs/
 
-# Backup files
-*.bak
-*.backup
-*~
-
-# Documentation builds
-docs/_build/
-site/
-
-# Test coverage
-.coverage
-htmlcov/
-.pytest_cache/
-
-# Large files warning
-*.tar
-*.tar.gz
-*.zip
-*.7z
-
+# Secrets
+*.pem
+*.key
+credentials.json
+service_account.json
