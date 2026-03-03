@@ -166,6 +166,11 @@ def parse_args():
     parser.add_argument("--wandb_project", type=str, default="rv-grpo")
     parser.add_argument("--seed", type=int, default=42)
 
+    # HuggingFace Hub
+    parser.add_argument("--push_to_hub", action="store_true",
+                        help="Push final model to HuggingFace Hub")
+    parser.add_argument("--hub_username", type=str, default="jkanishkha0305")
+
     return parser.parse_args()
 
 
@@ -551,6 +556,16 @@ def main():
     trainer.save_model(str(final_model_path))
     tokenizer.save_pretrained(str(final_model_path))
     logger.info(f"Model saved: {final_model_path}")
+
+    # Push to HuggingFace Hub
+    if args.push_to_hub:
+        hub_repo = f"{args.hub_username}/rv-grpo-judge-{args.model}"
+        logger.info(f"Pushing to HuggingFace Hub: {hub_repo}")
+        try:
+            trainer.push_to_hub(hub_repo)
+            logger.info(f"Pushed to: https://huggingface.co/{hub_repo}")
+        except Exception as e:
+            logger.warning(f"Hub push failed: {e}. Model saved locally at {final_model_path}")
 
     if args.use_wandb:
         import wandb

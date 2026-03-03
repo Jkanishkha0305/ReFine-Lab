@@ -6,11 +6,16 @@
 #   make train-sft      — Run SFT on all 3 models
 #   make train-grpo     — Run RV-GRPO on all 3 models
 #   make eval           — Run full evaluation suite
+#
+# All training targets push models to HuggingFace Hub and log to W&B.
 # ============================================================
 
 SHELL := /bin/bash
 PYTHON := python3
 MODELS := llama qwen phi
+
+# Default flags for all training runs
+TRAIN_FLAGS := --use_wandb --push_to_hub
 
 # ── Setup ────────────────────────────────────────────────────
 
@@ -40,7 +45,7 @@ data-sft:
 
 data-preferences:
 	$(PYTHON) data/generate_preferences.py \
-		--api_provider openai \
+		--api_provider groq \
 		--num_samples 5000 \
 		--output_dir ./data/processed/preferences
 
@@ -51,13 +56,13 @@ data-preferences:
 train-sft: train-sft-llama train-sft-qwen train-sft-phi
 
 train-sft-llama:
-	$(PYTHON) experiments/sft/train_sft.py --model llama --use_wandb
+	$(PYTHON) experiments/sft/train_sft.py --model llama $(TRAIN_FLAGS)
 
 train-sft-qwen:
-	$(PYTHON) experiments/sft/train_sft.py --model qwen --use_wandb
+	$(PYTHON) experiments/sft/train_sft.py --model qwen $(TRAIN_FLAGS)
 
 train-sft-phi:
-	$(PYTHON) experiments/sft/train_sft.py --model phi --use_wandb
+	$(PYTHON) experiments/sft/train_sft.py --model phi $(TRAIN_FLAGS)
 
 # ── RV-GRPO Training (main method) ──────────────────────────
 
@@ -69,19 +74,19 @@ train-grpo-llama:
 	$(PYTHON) experiments/grpo/train_rv_grpo.py \
 		--model llama \
 		--sft_checkpoint ./outputs/sft/llama/final_model \
-		--use_wandb
+		$(TRAIN_FLAGS)
 
 train-grpo-qwen:
 	$(PYTHON) experiments/grpo/train_rv_grpo.py \
 		--model qwen \
 		--sft_checkpoint ./outputs/sft/qwen/final_model \
-		--use_wandb
+		$(TRAIN_FLAGS)
 
 train-grpo-phi:
 	$(PYTHON) experiments/grpo/train_rv_grpo.py \
 		--model phi \
 		--sft_checkpoint ./outputs/sft/phi/final_model \
-		--use_wandb
+		$(TRAIN_FLAGS)
 
 # ── DPO Baseline ────────────────────────────────────────────
 
@@ -91,15 +96,15 @@ train-dpo: train-dpo-llama train-dpo-qwen train-dpo-phi
 
 train-dpo-llama:
 	$(PYTHON) experiments/alignment/train_dpo.py \
-		--model llama --use_wandb
+		--model llama $(TRAIN_FLAGS)
 
 train-dpo-qwen:
 	$(PYTHON) experiments/alignment/train_dpo.py \
-		--model qwen --use_wandb
+		--model qwen $(TRAIN_FLAGS)
 
 train-dpo-phi:
 	$(PYTHON) experiments/alignment/train_dpo.py \
-		--model phi --use_wandb
+		--model phi $(TRAIN_FLAGS)
 
 # ── LLM-Judge GRPO Baseline ─────────────────────────────────
 
@@ -110,7 +115,7 @@ train-judge-grpo:
 		$(PYTHON) experiments/grpo/train_llm_judge_grpo.py \
 			--model $$model \
 			--sft_checkpoint ./outputs/sft/$$model/final_model \
-			--use_wandb; \
+			$(TRAIN_FLAGS); \
 	done
 
 # ── Pilot Run (quick test before full training) ─────────────
@@ -123,19 +128,22 @@ pilot:
 	@echo "Step 1/3: SFT (1K samples, 1 epoch)"
 	$(PYTHON) experiments/sft/train_sft.py \
 		--model qwen --max_samples 1000 --num_epochs 1 \
-		--output_dir ./outputs/pilot/sft
+		--output_dir ./outputs/pilot/sft \
+		$(TRAIN_FLAGS)
 	@echo ""
 	@echo "Step 2/3: RV-GRPO (200 prompts, 4 generations)"
 	$(PYTHON) experiments/grpo/train_rv_grpo.py \
 		--model qwen \
 		--sft_checkpoint ./outputs/pilot/sft/qwen/final_model \
 		--max_samples 200 --num_generations 4 \
-		--output_dir ./outputs/pilot/rv_grpo
+		--output_dir ./outputs/pilot/rv_grpo \
+		$(TRAIN_FLAGS)
 	@echo ""
 	@echo "Step 3/3: DPO (500 samples)"
 	$(PYTHON) experiments/alignment/train_dpo.py \
 		--model qwen --max_samples 500 --num_epochs 1 \
-		--output_dir ./outputs/pilot/dpo
+		--output_dir ./outputs/pilot/dpo \
+		$(TRAIN_FLAGS)
 	@echo ""
 	@echo "=== PILOT COMPLETE ==="
 	@echo "Now run: make pilot-eval"

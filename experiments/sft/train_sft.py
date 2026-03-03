@@ -159,6 +159,12 @@ Examples:
     parser.add_argument("--wandb_project", type=str, default="mental-health-sft",
                         help="W&B project name")
 
+    # HuggingFace Hub
+    parser.add_argument("--push_to_hub", action="store_true",
+                        help="Push final model to HuggingFace Hub")
+    parser.add_argument("--hub_username", type=str, default="jkanishkha0305",
+                        help="HuggingFace username for push_to_hub")
+
     # Reproducibility
     parser.add_argument("--seed", type=int, default=DEFAULTS["seed"],
                         help="Random seed for reproducibility")
@@ -564,8 +570,17 @@ def main():
     final_model_dir = os.path.join(output_dir, "final_model")
     trainer.save_model(final_model_dir)
     tokenizer.save_pretrained(final_model_dir)
-
     logger.info(f"Model saved: {final_model_dir}")
+
+    # Push to HuggingFace Hub
+    if args.push_to_hub:
+        hub_repo = f"{args.hub_username}/rv-grpo-sft-{model_short_name}"
+        logger.info(f"Pushing to HuggingFace Hub: {hub_repo}")
+        try:
+            trainer.push_to_hub(hub_repo)
+            logger.info(f"Pushed to: https://huggingface.co/{hub_repo}")
+        except Exception as e:
+            logger.warning(f"Hub push failed: {e}. Model is saved locally at {final_model_dir}")
 
     # Step 7: Final evaluation
     logger.info("-" * 40)
