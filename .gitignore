@@ -56,13 +56,11 @@ saved_models/
 outputs/
 runs/
 
-# Data
-data/
+# Data (processed/raw data, NOT source code)
+data/processed/
+data/raw/
 datasets/raw/
 datasets/processed/
-*.csv
-*.json
-*.jsonl
 *.parquet
 *.arrow
 cache/
@@ -82,10 +80,6 @@ mlflow/
 # Training artifacts
 results/
 experiments/results/
-*.png
-*.jpg
-*.jpeg
-*.gif
 plots/
 
 # Cache

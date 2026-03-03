@@ -40,13 +40,13 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 # Model Registry
 # ============================================================================
 MODEL_REGISTRY = {
-    "gemma": {
-        "model_id": "google/gemma-3-270m",
+    "llama": {
+        "model_id": "meta-llama/Llama-3.2-1B-Instruct",
         "target_modules": ["q_proj", "k_proj", "v_proj", "o_proj"],
         "recommended_batch_size": 4,
     },
-    "llama": {
-        "model_id": "meta-llama/Llama-3.2-1B",
+    "qwen": {
+        "model_id": "Qwen/Qwen2.5-1.5B-Instruct",
         "target_modules": ["q_proj", "k_proj", "v_proj", "o_proj"],
         "recommended_batch_size": 4,
     },
@@ -54,11 +54,6 @@ MODEL_REGISTRY = {
         "model_id": "microsoft/Phi-4-mini-instruct",
         "target_modules": ["q_proj", "k_proj", "v_proj", "o_proj"],
         "recommended_batch_size": 2,
-    },
-    "qwen": {
-        "model_id": "Qwen/Qwen2.5-0.5B-Instruct",
-        "target_modules": ["q_proj", "k_proj", "v_proj", "o_proj"],
-        "recommended_batch_size": 4,
     },
 }
 

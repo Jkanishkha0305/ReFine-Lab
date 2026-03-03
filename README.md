@@ -1,251 +1,251 @@
-# 🔬 ReFine-Lab: Your Complete Post-Training Learning Hub
+# ReFine-Lab: Rubric-Verifiable GRPO for Behavioral Alignment in Mental Health SLMs
 
-A practical, beginner-friendly repository for learning **ALL** post-training techniques through hands-on experiments with small language models. Perfect for researchers, students, and practitioners who want to master LLM fine-tuning.
+Extending GRPO beyond math/code to therapeutic conversation using clinically-grounded rubric rewards from Motivational Interviewing (MI). Train, align, evaluate, and deploy small language models (1-3.8B) for on-device mental health support.
 
-## 🎯 What You'll Learn
+## Research Question
 
-This repository covers **every major post-training technique** for LLMs:
+> Can clinically-grounded rubric-verifiable rewards enable GRPO to produce measurably better therapeutic behavioral alignment in SLMs compared to SFT, DPO, and LLM-judge baselines?
 
-- **Supervised Fine-Tuning (SFT)**: LoRA, QLoRA, Adapters, Prompt Tuning, Full Fine-Tuning
-- **Knowledge Distillation**: Teacher-student training, Speculative KD
-- **Preference Optimization**: DPO, ORPO, IPO, SimPO, KTO
-- **RL-Based Methods**: PPO, GRPO, RLOO, RRHF
-- **Full RLHF Pipeline**: Reward models → Policy optimization
-- **Advanced Alignment**: Constitutional AI, Rejection Sampling, SPIN
-- **Model Compression**: Quantization, Pruning, Model Merging
-- **Dynamic Architectures**: Early exit, Mixture of Depths
-- **Specialized Techniques**: Chain-of-Thought, Tool Use, Continual Learning
-- **Safety & Control**: Unlearning, Model Editing
-- **Optimization**: Flash Attention, Distributed Training, Fast Inference
+## Models
 
-## 🚀 Quick Start
+| Model | Size | HuggingFace ID |
+|-------|------|----------------|
+| LLaMA 3.2 | 1B | `meta-llama/Llama-3.2-1B-Instruct` |
+| Qwen 2.5 | 1.5B | `Qwen/Qwen2.5-1.5B-Instruct` |
+| Phi-4 Mini | 3.8B | `microsoft/Phi-4-mini-instruct` |
 
-### Installation
+## Rubric-Verifiable Rewards (R1-R5)
+
+The core contribution: 5 binary rewards grounded in Motivational Interviewing.
+
+| Reward | Signal | How It's Verified |
+|--------|--------|-------------------|
+| R1: Open Question | Response asks open-ended (not yes/no) question | Regex + sentence parsing |
+| R2: Emotion Reflection | Model reflects user's emotional state | NLI with DeBERTa |
+| R3: No Premature Advice | No directive advice in early exchanges | POS tagging + keywords |
+| R4: Validation Before Redirect | Validates feelings before suggesting | Pattern matching |
+| R5: Length Appropriateness | Response is 50-200 tokens | Token count |
+
+Combined reward: `R = w1*R1 + w2*R2 + w3*R3 + w4*R4 + w5*R5`, normalized to [0, 1].
+
+## Quick Start
+
+### 1. Setup (Lambda Labs / Cloud GPU)
 
 ```bash
-# Clone the repository
-git clone https://github.com/yourusername/ReFine-Lab.git
+git clone https://github.com/jkanishkha0305/ReFine-Lab.git
 cd ReFine-Lab
+cp .env.example .env   # fill in HF_TOKEN, GROQ_API_KEY, WANDB_API_KEY
 
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+# Standard setup
+bash setup.sh
 
-# Install dependencies
-pip install -r requirements.txt
-
-# Optional: Install Flash Attention for faster training
-pip install flash-attn --no-build-isolation
-
-# Optional: Setup Weights & Biases for experiment tracking
-wandb login
+# Or faster setup with UV
+bash setup_uv.sh
 ```
 
-### Your First Experiment (5 minutes)
-
-Start with the simplest fine-tuning example:
+### 2. Verify Installation
 
 ```bash
-# Open the first notebook
-jupyter notebook notebooks/01_sft_lora_basics.ipynb
+source .venv/bin/activate
+make check-gpu        # verify GPU
+make test-rewards     # test rubric reward functions
 ```
 
-This notebook will guide you through:
-1. Loading a small model (Gemma 270M)
-2. Preparing a tiny instruction dataset
-3. Fine-tuning with LoRA
-4. Testing your fine-tuned model
+### 3. Pilot Run (recommended first)
 
-**Expected time**: ~5 minutes on a single GPU
-**Memory required**: ~4GB VRAM
+Quick validation on Qwen 1.5B only (~2 hours):
 
-## 📚 Learning Path
+```bash
+make pilot            # SFT (1K samples) + RV-GRPO (200 prompts) + DPO (500 samples)
+make pilot-eval       # evaluate pilot models
+```
 
-### Week 1-2: Foundations
-1. **`01_sft_lora_basics.ipynb`** - Master LoRA fine-tuning
-2. **`04_instruction_tuning.ipynb`** - Work with instruction datasets
-3. **`07_data_quality.ipynb`** - Learn data filtering and quality scoring
+### 4. Full Training Pipeline
 
-### Week 3-4: Alignment Basics
-4. **`12_dpo.ipynb`** - Direct Preference Optimization (easiest alignment method)
-5. **`11_reward_models.ipynb`** - Understanding reward models
-6. **`16_kto.ipynb`** - KTO (works with simple thumbs-up/down data)
+```bash
+# Step 0: Generate preference pairs for DPO (one-time, uses Groq free tier)
+python data/generate_preferences.py --api_provider groq --num_samples 5000
 
-### Week 5-6: Advanced RL
-7. **`21_rlhf_pipeline.ipynb`** - Complete RLHF workflow
-8. **`17_ppo.ipynb`**, **`18_grpo.ipynb`** - Compare RL methods
+# Step 1: SFT all 3 models
+make train-sft
 
-### Week 7-8: Specialization
-9. **`09_knowledge_distillation.ipynb`** - Compress models
-10. **`25_quantization.ipynb`** - Deploy efficiently
-11. **Your own experiments!**
+# Step 2: Alignment (run independently, all start from SFT checkpoints)
+make train-grpo          # RV-GRPO (ours)
+make train-dpo           # DPO baseline
+make train-judge-grpo    # LLM-judge GRPO baseline
 
-## 📁 Repository Structure
+# Step 3: Evaluation
+make eval                # rubric metrics + external benchmarks
+
+# Step 4: Ablation study
+make ablation            # leave-one-out analysis of R1-R5
+
+# Step 5: Quantize & benchmark
+make quantize            # GGUF Q4 for on-device deployment
+```
+
+Or run everything at once:
+
+```bash
+make all
+```
+
+## Pipeline Overview
+
+```
+MentalChat16K + ESConv
+        |
+    [prepare_sft_data.py]
+        |
+   SFT Dataset (~15K)
+        |
+   [train_sft.py] ──────────────────────────────────────────┐
+        |                                                    |
+   SFT Checkpoint                                           |
+    /       |        \                                       |
+   /        |         \                                      |
+[RV-GRPO]  [DPO]  [LLM-Judge GRPO]                   [SFT baseline]
+   |        |         |                                      |
+   └────────┴─────────┴──────────────────────────────────────┘
+                          |
+                   [Evaluation]
+              behavioral_metrics.py
+             external_benchmarks.py
+                   visualize.py
+                          |
+                   [Deployment]
+                   quantize.py
+                   benchmark.py
+```
+
+## Project Structure
 
 ```
 ReFine-Lab/
-├── notebooks/              # 40+ learning notebooks
-│   ├── 01_sft_lora_basics.ipynb
-│   ├── 12_dpo.ipynb
-│   └── ...
-├── experiments/            # Production training scripts
+├── data/
+│   ├── rubric_rewards.py          # R1-R5 reward implementations (core contribution)
+│   ├── prepare_sft_data.py        # merge MentalChat16K + ESConv
+│   └── generate_preferences.py    # generate DPO pairs via Groq/Cerebras
+│
+├── experiments/
 │   ├── sft/
-│   ├── dpo/
-│   ├── ppo/
-│   └── ...
-├── configs/               # Configuration templates
-│   ├── model_configs/     # Per-model configs
-│   ├── dataset_configs/   # Dataset preparation
-│   └── training_configs/  # Training hyperparameters
-├── utils/                 # Shared utilities
-│   ├── model_loader.py
-│   ├── data_quality.py
-│   ├── tracking.py
-│   └── ...
-├── datasets/             # Dataset preparation scripts
-├── docs/                 # Comprehensive guides
-│   ├── GETTING_STARTED.md
-│   ├── TECHNIQUE_GUIDE.md
-│   ├── hardware_guide.md
-│   └── troubleshooting.md
-└── requirements.txt
+│   │   └── train_sft.py           # SFT training for all 3 models
+│   ├── grpo/
+│   │   ├── train_rv_grpo.py       # MAIN: GRPO with rubric rewards
+│   │   ├── train_llm_judge_grpo.py # baseline: GRPO with LLM-judge
+│   │   └── run_ablation.py        # leave-one-out & weight sweep
+│   └── alignment/
+│       ├── train_dpo.py           # DPO baseline
+│       ├── train_orpo.py          # ORPO (optional)
+│       └── train_kto.py           # KTO (optional)
+│
+├── evaluation/
+│   ├── behavioral_metrics.py      # compute R1-R5 on test set
+│   ├── external_benchmarks.py     # CounselBench, MindEval, Empathy
+│   ├── visualize.py               # radar charts, tables, figures
+│   └── eval_config.json           # batch evaluation config
+│
+├── deployment/
+│   ├── quantize.py                # LoRA merge + GGUF conversion
+│   └── benchmark.py               # inference speed benchmarks
+│
+├── Makefile                       # all commands
+├── setup.sh                       # Lambda Labs setup (pip)
+├── setup_uv.sh                    # fast setup (UV)
+├── pyproject.toml                 # Python packaging
+├── requirements.txt               # pip fallback
+└── .env.example                   # API keys template
 ```
 
-## 🎓 What's Included
+## Experimental Design
 
-### 40+ Jupyter Notebooks
+4 methods x 3 models = 12 training runs:
 
-Each notebook includes:
-- 📖 Clear explanations of concepts
-- 💻 Working code examples
-- ⚡ Training time estimates
-- 💾 Memory requirements
-- 🎯 When to use this technique
+| Method | Description | Script |
+|--------|-------------|--------|
+| SFT only | Supervised fine-tuning baseline | `train_sft.py` |
+| SFT + DPO | Preference optimization baseline | `train_dpo.py` |
+| SFT + GRPO (LLM-judge) | GRPO with generic reward model | `train_llm_judge_grpo.py` |
+| **SFT + RV-GRPO (ours)** | **GRPO with rubric-verifiable rewards** | **`train_rv_grpo.py`** |
 
-### Ready-to-Run Training Scripts
+## Evaluation
 
-Production-grade scripts for every technique:
-- Command-line interfaces
-- Config file support
-- Experiment tracking integration
-- Checkpoint management
-- Multi-GPU support
+### Behavioral Metrics (R1-R5)
 
-### Model Support
+Measured on 500 held-out test prompts:
 
-Pre-configured for popular small language models:
-- **Llama 3.2 1B** - Meta's efficient model
-- **Phi-3 Mini** - Microsoft's small model
-- **Gemma 2 270M/2B** - Google's compact models
-- **Qwen 2.5 0.5B-7B** - Alibaba's multilingual models
-- **LFM-2 1B** - Liquid AI's models
+- Open Question Rate
+- Emotion Reflection Rate
+- Premature Advice Rate (lower is better)
+- Validation Rate
+- Response Length Distribution
 
-## 💻 Hardware Requirements
+### External Benchmarks
 
-### Minimum (Learning & Experimentation)
-- **GPU**: Single RTX 3060/3070 (12GB VRAM)
-- **RAM**: 16GB
-- **Models**: Gemma 270M, Qwen 0.5B with QLoRA
-- **What you can do**: All techniques, small scale
+- **CounselBench**: empathy, clinical accuracy, active listening, safety (1-5)
+- **MindEval**: clinical competence, ethical conduct, therapeutic alliance (1-6)
+- **Empathy Classification**: go_emotions emotion recognition
 
-### Recommended (Serious Experiments)
-- **GPU**: RTX 4090 or 2x RTX 3090 (24GB+ VRAM)
-- **RAM**: 32GB+
-- **Models**: All models up to 3B with QLoRA, 1B full fine-tuning
-- **What you can do**: Everything in the repo
+### Ablation Study
 
-### Optimal (Research & Production)
-- **GPU**: A100 (40GB/80GB) or H100
-- **RAM**: 64GB+
-- **Models**: All models, including full fine-tuning of 7B models
-- **What you can do**: Large-scale experiments, multi-GPU training
+- Leave-one-out: remove each R1-R5 individually
+- Weight sweep: optimize reward weight combinations
 
-### Cloud Options
-- **Google Colab Pro**: Sufficient for most notebooks ($10/month)
-- **Lambda Labs**: ~$0.50-$1.10/hour for various GPUs
-- **RunPod**: Flexible GPU rental
-- **AWS/GCP/Azure**: Professional deployment
+## Hardware
 
-## 🔥 Key Features
+| Setup | GPU | What You Can Run |
+|-------|-----|-----------------|
+| Pilot | A10G (24GB) | `make pilot` — Qwen 1.5B only |
+| Full | A100 (80GB) | `make all` — all 3 models, all methods |
 
-✅ **Beginner-Friendly**: Start with no prior knowledge
-✅ **Comprehensive**: Every major post-training technique
-✅ **Practical**: Real, working code you can run today
-✅ **Hardware-Aware**: Configs for different GPU setups
-✅ **Research-Ready**: Experiment tracking, benchmarking, visualization
-✅ **Well-Documented**: Extensive guides and troubleshooting
-✅ **Active**: Following latest research and best practices
+Single GPU is sufficient. No multi-GPU needed.
 
-## 📊 Experiment Tracking
+**Estimated costs (Lambda Labs A100 @ $1.10/hr):**
+- Pilot: ~$2-3
+- Full pipeline: ~$70-90
 
-All training scripts integrate with:
-- **Weights & Biases** (recommended) - Beautiful dashboards
-- **TensorBoard** - Local visualization
-- **MLflow** - Experiment management
+## Environment Variables
 
-Track automatically:
-- Training/validation loss
-- Learning rate schedules
-- GPU memory usage
-- Training speed (tokens/sec)
-- Custom metrics
-- Model checkpoints
+Copy `.env.example` to `.env` and fill in:
 
-## 🎯 Technique Comparison
+```bash
+HF_TOKEN=hf_...              # required (for gated models like LLaMA)
+WANDB_API_KEY=...             # optional (experiment tracking)
+GROQ_API_KEY=gsk_...          # for preference generation (free tier)
+```
 
-| Technique | Difficulty | Data Needed | When to Use |
-|-----------|-----------|-------------|-------------|
-| **LoRA** | Easy | Instruction data | First choice for fine-tuning |
-| **DPO** | Easy | Preference pairs | Easiest alignment method |
-| **KTO** | Easy | Thumbs up/down | Minimal preference data |
-| **PPO** | Medium | Reward model | Complex alignment needs |
-| **RLHF** | Hard | Preferences + RM | Full research pipeline |
-| **Distillation** | Medium | Teacher model | Model compression |
-| **Quantization** | Easy | None | Fast inference |
+## Key Dependencies
 
-See `docs/TECHNIQUE_GUIDE.md` for detailed comparison.
+- PyTorch >= 2.1.0
+- Transformers >= 4.38.0
+- TRL >= 0.14.0 (for GRPOTrainer)
+- PEFT >= 0.8.0
+- Accelerate >= 0.27.0
 
-## 📖 Documentation
+## Related Work
 
-- **[GETTING_STARTED.md](docs/GETTING_STARTED.md)**: Step-by-step beginner's guide
-- **[TECHNIQUE_GUIDE.md](docs/TECHNIQUE_GUIDE.md)**: When to use which method
-- **[hardware_guide.md](docs/hardware_guide.md)**: GPU requirements & optimization
-- **[dataset_guide.md](docs/dataset_guide.md)**: Best datasets for each technique
-- **[troubleshooting.md](docs/troubleshooting.md)**: Common issues & solutions
-- **[papers.md](docs/papers.md)**: Key research papers (optional reading)
+- [RLVER](https://hf.co/papers/2507.03112) — RLVR with emotion rewards (general EQ, 7B)
+- [Clinical-R1](https://hf.co/papers/2512.00601) — Multi-objective GRPO for clinical reasoning
+- [Psyche-R1](https://hf.co/papers/2508.10848) — Chinese psych LLM with GRPO
+- [TIDE](https://hf.co/papers/2505.15065) — SLM empathy for PTSD (SFT only)
+- [PsyLite](https://hf.co/papers/2506.21536) — Lightweight psych counseling with ORPO
 
-## 🤝 Contributing
+## Citation
 
-Contributions are welcome! Areas we'd love help with:
-- Adding new techniques
-- Improving documentation
-- Creating more example notebooks
-- Optimizing training scripts
-- Sharing your experiment results
+```bibtex
+@misc{kanishkha2026rvgrpo,
+  title={RV-GRPO: Rubric-Verifiable Group Relative Policy Optimization for Behavioral Alignment in Mental Health SLMs},
+  author={Kanishkha, J},
+  year={2026},
+  url={https://github.com/jkanishkha0305/ReFine-Lab}
+}
+```
 
-## 📄 License
+## License
 
-MIT License - See LICENSE file for details
+MIT License — See [LICENSE](LICENSE) for details.
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
-Built with amazing open-source libraries:
-- [HuggingFace Transformers](https://github.com/huggingface/transformers)
-- [HuggingFace TRL](https://github.com/huggingface/trl)
-- [HuggingFace PEFT](https://github.com/huggingface/peft)
-- [Unsloth](https://github.com/unslothai/unsloth)
-- [Flash Attention](https://github.com/Dao-AILab/flash-attention)
-
-## 📬 Contact & Support
-
-- **Issues**: [GitHub Issues](https://github.com/yourusername/ReFine-Lab/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/ReFine-Lab/discussions)
-- **Documentation**: Check `docs/` directory
-
-## 🌟 Star History
-
-If this repository helps you, please consider giving it a ⭐!
-
----
-
-**Ready to start?** Jump to [GETTING_STARTED.md](docs/GETTING_STARTED.md) or open your first notebook!
+Built with [HuggingFace TRL](https://github.com/huggingface/trl), [PEFT](https://github.com/huggingface/peft), and [Transformers](https://github.com/huggingface/transformers).
