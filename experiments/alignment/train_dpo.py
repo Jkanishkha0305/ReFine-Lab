@@ -431,6 +431,11 @@ def main():
         json.dump(eval_results, f, indent=2)
 
     if args.use_wandb:
+        artifact = wandb.Artifact(f"dpo-{args.model}-results", type="results")
+        artifact.add_file(str(eval_path))
+        artifact.add_file(str(config_path))
+        wandb.log_artifact(artifact)
+        logger.info("Results & config uploaded to W&B artifacts")
         wandb.finish()
 
     logger.info("=" * 60)

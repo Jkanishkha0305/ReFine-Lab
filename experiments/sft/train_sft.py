@@ -607,8 +607,13 @@ def main():
 
     logger.info(f"Metrics saved: {metrics_path}")
 
-    # Cleanup
+    # Upload artifacts to W&B (survives instance death)
     if args.use_wandb and WANDB_AVAILABLE:
+        artifact = wandb.Artifact(f"sft-{model_short_name}-results", type="results")
+        artifact.add_file(metrics_path)
+        artifact.add_file(config_path)
+        wandb.log_artifact(artifact)
+        logger.info("Metrics & config uploaded to W&B artifacts")
         wandb.finish()
 
     # Final summary

@@ -508,9 +508,13 @@ def main():
         for k, v in result["scores"].items():
             logger.info(f"  {k}: {v:.1f}")
 
-    # Cleanup
+    # Upload artifacts to W&B
     if args.use_wandb:
         import wandb
+        artifact = wandb.Artifact(f"rv-grpo-{args.model}-results", type="results")
+        artifact.add_file(str(config_path))
+        wandb.log_artifact(artifact)
+        logger.info("Config uploaded to W&B artifacts")
         wandb.finish()
 
     logger.info("=" * 60)

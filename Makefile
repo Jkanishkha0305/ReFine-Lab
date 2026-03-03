@@ -47,7 +47,8 @@ data-preferences:
 	$(PYTHON) data/generate_preferences.py \
 		--api_provider groq \
 		--num_samples 5000 \
-		--output_dir ./data/processed/preferences
+		--output_dir ./data/processed/preferences \
+		--push_to_hub
 
 # ── SFT Training ────────────────────────────────────────────
 

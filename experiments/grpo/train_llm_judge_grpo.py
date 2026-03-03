@@ -569,6 +569,10 @@ def main():
 
     if args.use_wandb:
         import wandb
+        artifact = wandb.Artifact(f"judge-grpo-{args.model}-results", type="results")
+        artifact.add_file(str(config_path))
+        wandb.log_artifact(artifact)
+        logger.info("Config uploaded to W&B artifacts")
         wandb.finish()
 
     logger.info("=" * 60)
